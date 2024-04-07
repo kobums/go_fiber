@@ -14,10 +14,6 @@ func SetRouter(app *fiber.App) {
 		passwd := ctx.Query("passwd")
 		return ctx.JSON(JwtAuth(email, passwd))
 	})
-	app.Get("/api/jwt/token", func(ctx *fiber.Ctx) error {
-		token := ctx.Get("Authorization")
-		return ctx.JSON(JwtToken(token))
-	})
 	apiGroup := app.Group("/api")
 	apiGroup.Use(JwtAuthRequired())
 	{
@@ -28,11 +24,6 @@ func SetRouter(app *fiber.App) {
 			controller.Read(id_)
 			controller.Close()
 			return ctx.JSON(controller.Result)
-		})
-
-		apiGroup.Get("/me", func(ctx *fiber.Ctx) error {
-			token := ctx.Get("Authorization")
-			return ctx.JSON(JwtMe(token))
 		})
 
 		apiGroup.Get("/user", func(ctx *fiber.Ctx) error {
