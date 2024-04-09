@@ -23,12 +23,12 @@ func (c *UserController) Index(page int, pagesize int) {
 
     passwd := c.Query("passwd")
     if passwd != "" {
-        args = append(args, models.Where{Column:"passwd", Value:passwd, Compare:"like"})
+        args = append(args, models.Where{Column:"passwd", Value:passwd, Compare:"="})
     }
 
     email := c.Query("email")
     if email != "" {
-        args = append(args, models.Where{Column:"email", Value:email, Compare:"like"})
+        args = append(args, models.Where{Column:"email", Value:email, Compare:"="})
     }
     startdate := c.Query("startdate")
     enddate := c.Query("enddate")
