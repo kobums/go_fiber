@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -266,24 +265,9 @@ func (p *AuthManager) Count(args []interface{}) int {
 	for _, arg := range args {
 		switch v := arg.(type) {
 		case Where:
-			item := v
-
-			if item.Compare == "in" {
-				query += " and a_id in (" + strings.Trim(strings.Replace(fmt.Sprint(item.Value), " ", ", ", -1), "[]") + ")"
-			} else if item.Compare == "between" {
-				query += " and a_" + item.Column + " between ? and ?"
-
-				s := item.Value.([2]string)
-				params = append(params, s[0])
-				params = append(params, s[1])
-			} else {
-				query += " and a_" + item.Column + " " + item.Compare + " ?"
-				if item.Compare == "like" {
-					params = append(params, "%" + item.Value.(string) + "%")
-				} else {
-					params = append(params, item.Value)
-				}
-			}
+			clause, whereParams := WhereClause("a_", v)
+			query += clause
+			params = append(params, whereParams...)
 		}
 	}
 
@@ -351,24 +335,9 @@ func (p *AuthManager) Find(args []interface{}) *[]Auth {
 			orderby = item.Order
 			break
 		case Where:
-			item := v
-
-			if item.Compare == "in" {
-				query += " and a_id in (" + strings.Trim(strings.Replace(fmt.Sprint(item.Value), " ", ", ", -1), "[]") + ")"
-			} else if item.Compare == "between" {
-				query += " and a_" + item.Column + " between ? and ?"
-
-				s := item.Value.([2]string)
-				params = append(params, s[0])
-				params = append(params, s[1])
-			} else {
-				query += " and a_" + item.Column + " " + item.Compare + " ?"
-				if item.Compare == "like" {
-					params = append(params, "%" + item.Value.(string) + "%")
-				} else {
-					params = append(params, item.Value)
-				}
-			}
+			clause, whereParams := WhereClause("a_", v)
+			query += clause
+			params = append(params, whereParams...)
 		}
 	}
 
