@@ -20,7 +20,8 @@ func main() {
 
 	app := fiber.New()
 	app.Use(logger.New(logger.Config{
-		Format: "[${time}] | ${status} | ${latency} | ${ip}:${port} | ${method} | ${url}\n",
+		// ${url} 은 쿼리스트링(/api/jwt?passwd=...)까지 기록하므로 ${path} 만 남긴다.
+		Format: "[${time}] | ${status} | ${latency} | ${ip}:${port} | ${method} | ${path}\n",
 		TimeFormat: time.DateTime,
 	}))
 

@@ -50,7 +50,9 @@ func SetRouter(app *fiber.App) {
 			ctx.BodyParser(item_)
 			var controller rest.UserController
 			controller.Init(ctx)
-			if item_ != nil {
+			hashed, err := HashPasswd(item_.Passwd)
+			if item_.Passwd != "" && err == nil {
+				item_.Passwd = hashed
 				controller.Insert(item_)
 			} else {
 			    controller.Result["code"] = "error"
@@ -64,6 +66,24 @@ func SetRouter(app *fiber.App) {
 			ctx.BodyParser(item_)
 			var controller rest.UserController
 			controller.Init(ctx)
+			// 본인 계정만 수정할 수 있다 (IDOR 방지).
+			if controller.Session == nil || item_.Id != controller.Session.Id {
+				controller.Close()
+				return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"code": "error", "message": "forbidden"})
+			}
+			if item_.Passwd == "" {
+				// 비밀번호를 보내지 않으면 기존 비밀번호를 유지한다.
+				if existing := models.NewUserManager(controller.NewConnection()).Get(item_.Id); existing != nil {
+					item_.Passwd = existing.Passwd
+				}
+			} else {
+				hashed, err := HashPasswd(item_.Passwd)
+				if err != nil {
+					controller.Close()
+					return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"code": "error"})
+				}
+				item_.Passwd = hashed
+			}
 			if item_ != nil {
 				controller.Update(item_)
 			} else {
@@ -78,6 +98,11 @@ func SetRouter(app *fiber.App) {
 			ctx.BodyParser(item_)
 			var controller rest.UserController
 			controller.Init(ctx)
+			// 본인 계정만 삭제할 수 있다 (IDOR 방지).
+			if controller.Session == nil || item_.Id != controller.Session.Id {
+				controller.Close()
+				return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"code": "error", "message": "forbidden"})
+			}
 			if item_ != nil {
 				controller.Delete(item_)
 			} else {

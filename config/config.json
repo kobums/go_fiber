@@ -1,5 +1,0 @@
-{
-  "database": "mysql",
-  "connectionString": "project:projectdb@tcp(141.164.56.77:3306)/project",
-  "secretCode": "SecretCodetigerstone"
-}

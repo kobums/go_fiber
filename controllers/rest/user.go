@@ -21,11 +21,6 @@ func (c *UserController) Index(page int, pagesize int) {
         args = append(args, models.Where{Column:"name", Value:name, Compare:"="})
     }
 
-    passwd := c.Query("passwd")
-    if passwd != "" {
-        args = append(args, models.Where{Column:"passwd", Value:passwd, Compare:"like"})
-    }
-
     email := c.Query("email")
     if email != "" {
         args = append(args, models.Where{Column:"email", Value:email, Compare:"like"})
@@ -61,6 +56,12 @@ func (c *UserController) Index(page int, pagesize int) {
     }
 
 	items := manager.Find(args)
+	// 응답에 비밀번호(해시)를 노출하지 않는다.
+	if items != nil {
+		for i := range *items {
+			(*items)[i].Passwd = ""
+		}
+	}
 	c.Set("items", items)
 
     total := manager.Count(args)
@@ -72,6 +73,10 @@ func (c *UserController) Read(id int64) {
 
 	manager := models.NewUserManager(conn)
 	item := manager.Get(id)
+	// 응답에 비밀번호(해시)를 노출하지 않는다.
+	if item != nil {
+		item.Passwd = ""
+	}
 
     c.Set("item", item)
 }
