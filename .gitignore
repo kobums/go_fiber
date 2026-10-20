@@ -5,3 +5,6 @@
 
 # local env file
 .env
+# config with secrets (config/config.json.example 참고)
+/config/config.json
+/config/config.json.docker

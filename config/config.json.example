@@ -1,0 +1,5 @@
+{
+  "database": "mysql",
+  "connectionString": "your-db-user:your-db-password@tcp(your-db-host:3306)/your-db-name",
+  "secretCode": "change-me-to-a-random-secret-at-least-32-bytes"
+}

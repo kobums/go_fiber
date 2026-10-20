@@ -20,7 +20,8 @@ func main() {
 
 	app := fiber.New()
 	app.Use(logger.New(logger.Config{
-		Format: "[${time}] | ${status} | ${latency} | ${ip}:${port} | ${method} | ${url}\n",
+		// ${url} 은 쿼리스트링(/api/jwt?passwd=...)까지 기록하므로 ${path} 만 남긴다.
+		Format: "[${time}] | ${status} | ${latency} | ${ip}:${port} | ${method} | ${path}\n",
 		TimeFormat: time.DateTime,
 	}))
 
@@ -38,6 +39,8 @@ func main() {
 		}, ","),
 	}))
 
+	// POST /api/jwt (로그인). GET /api/jwt?email=&passwd= 는 router.go 에 deprecated 로 남아 있다.
+	router.SetAuthRouter(app)
 	router.SetRouter(app)
 
 	log.Fatal(app.Listen(":9003"))

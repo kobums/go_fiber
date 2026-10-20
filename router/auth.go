@@ -5,11 +5,13 @@ import (
 	"log"
 	"net/http"
 	"project/config"
+	"strings"
 	"project/models"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthTokenClaims struct {
@@ -21,6 +23,23 @@ type RefreshTokenClaims struct {
 	UserId int64 `json:"user_id"`
 	Email string `json:"email"`
 	jwt.RegisteredClaims
+}
+
+// SetAuthRouter 는 POST /api/jwt 로그인 라우트를 등록한다.
+// router.go 는 buildtool-router 가 재생성하며 덮어쓰므로, 재생성 후에도 유지되도록
+// 이 파일(수동 관리)에 두고 main.go 에서 SetRouter 보다 먼저 호출한다.
+// (JwtAuthRequired 미들웨어보다 먼저 등록되어야 인증 없이 호출된다.)
+func SetAuthRouter(app *fiber.App) {
+	app.Post("/api/jwt", func(ctx *fiber.Ctx) error {
+		var req struct {
+			Email  string `json:"email" form:"email"`
+			Passwd string `json:"passwd" form:"passwd"`
+		}
+		if err := ctx.BodyParser(&req); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"code": "error", "message": "invalid request"})
+		}
+		return ctx.JSON(JwtAuth(req.Email, req.Passwd))
+	})
 }
 
 func JwtAuthRequired() fiber.Handler {
@@ -79,12 +98,15 @@ func JwtAuth(email string, passwd string) fiber.Map {
 		}
 	}
 
-	if user.Passwd != passwd {
+	if !verifyPassword(manager, user, passwd) {
 		return fiber.Map{
 			"code":    "error",
 			"message": "wrong password",
 		}
 	}
+
+	// 토큰(클레임)에 비밀번호가 들어가지 않도록 비운다.
+	user.Passwd = ""
 
 	at := AuthTokenClaims{
 		User: *user,
@@ -176,6 +198,8 @@ func JwtToken(refreshToken string) fiber.Map {
 						}
 					}
 
+					// 토큰(클레임)에 비밀번호가 들어가지 않도록 비운다.
+					user.Passwd = ""
 					at := AuthTokenClaims{
 						User: *user,
 						RegisteredClaims: jwt.RegisteredClaims{
@@ -245,4 +269,30 @@ func JwtMe(token string) fiber.Map {
 			"code":"error",
 			"message":"not auth",
 		}
+}
+
+// HashPasswd 는 비밀번호를 bcrypt 로 해시한다.
+func HashPasswd(passwd string) (string, error) {
+	hashed, err := bcrypt.GenerateFromPassword([]byte(passwd), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashed), nil
+}
+
+// verifyPassword 는 저장된 값이 bcrypt 해시면 bcrypt 로 검증한다.
+// 기존에 평문으로 저장된 계정은 평문 비교 후 일치하면 bcrypt 로 자동 마이그레이션한다.
+func verifyPassword(manager *models.UserManager, user *models.User, raw string) bool {
+	stored := user.Passwd
+	if strings.HasPrefix(stored, "$2") {
+		return bcrypt.CompareHashAndPassword([]byte(stored), []byte(raw)) == nil
+	}
+	if stored != "" && stored == raw {
+		if hashed, err := HashPasswd(raw); err == nil {
+			user.Passwd = hashed
+			manager.Update(user)
+		}
+		return true
+	}
+	return false
 }
