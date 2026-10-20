@@ -39,6 +39,8 @@ func main() {
 		}, ","),
 	}))
 
+	// POST /api/jwt (로그인). GET /api/jwt?email=&passwd= 는 router.go 에 deprecated 로 남아 있다.
+	router.SetAuthRouter(app)
 	router.SetRouter(app)
 
 	log.Fatal(app.Listen(":9003"))

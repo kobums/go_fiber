@@ -9,6 +9,7 @@ import (
 )
 
 func SetRouter(app *fiber.App) {
+	// Deprecated: 쿼리스트링 로그인은 기존 클라이언트 호환용. 새 클라이언트는 POST /api/jwt (auth.go SetAuthRouter).
 	app.Get("/api/jwt", func(ctx *fiber.Ctx) error {
 		email := ctx.Query("email")
 		passwd := ctx.Query("passwd")

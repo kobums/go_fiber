@@ -25,6 +25,23 @@ type RefreshTokenClaims struct {
 	jwt.RegisteredClaims
 }
 
+// SetAuthRouter 는 POST /api/jwt 로그인 라우트를 등록한다.
+// router.go 는 buildtool-router 가 재생성하며 덮어쓰므로, 재생성 후에도 유지되도록
+// 이 파일(수동 관리)에 두고 main.go 에서 SetRouter 보다 먼저 호출한다.
+// (JwtAuthRequired 미들웨어보다 먼저 등록되어야 인증 없이 호출된다.)
+func SetAuthRouter(app *fiber.App) {
+	app.Post("/api/jwt", func(ctx *fiber.Ctx) error {
+		var req struct {
+			Email  string `json:"email" form:"email"`
+			Passwd string `json:"passwd" form:"passwd"`
+		}
+		if err := ctx.BodyParser(&req); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"code": "error", "message": "invalid request"})
+		}
+		return ctx.JSON(JwtAuth(req.Email, req.Passwd))
+	})
+}
+
 func JwtAuthRequired() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var token string
